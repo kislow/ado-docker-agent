@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ############################################
-# Dislaimer: Script tested in Ubuntu only  #
+# Dislaimer: Script tested on Ubuntu only  #
 ############################################
 
 # remove any exisiting package
