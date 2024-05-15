@@ -1,0 +1,17 @@
+version: '3'
+services:
+  azp-agent-linux1:
+    image: azp-agent:linux
+    env_file:
+      - .env
+    environment:
+      - AZP_AGENT_NAME=ccoe-linux-docker-agent1
+    container_name: azp-agent-linux1
+
+  azp-agent-linux2:
+    image: azp-agent:linux
+    env_file:
+      - .env
+    environment:
+      - AZP_AGENT_NAME=ccoe-linux-docker-agent2
+    container_name: azp-agent-linux2
