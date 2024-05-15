@@ -24,7 +24,7 @@ curl -sL https://aka.ms/InstallAzureCLIDeb | bash
 
 ```sh
 # install docker on vm
-./docker_install_ubuntu.sh
+./docker_install.sh
 ```
 
 ```sh
