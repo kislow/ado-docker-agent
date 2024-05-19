@@ -29,9 +29,7 @@ curl -sL https://aka.ms/InstallAzureCLIDeb | bash
 
 ```sh
 # clone repository
-git clone git@ssh.dev.azure.com:v3/ADIBCCOE/ADIB-automation-Dev-project/ado-linux-docker-agent
-or
-git clone https://ADIBCCOE@dev.azure.com/ADIBCCOE/ADIB-automation-Dev-project/_git/ado-linux-docker-agent
+git@github.com:kislow/ado-docker-agent.git
 ```
 
 ## Setting up docker agent in linux vm
