@@ -5,7 +5,7 @@ services:
     env_file:
       - .env
     environment:
-      - AZP_AGENT_NAME=ccoe-linux-docker-agent1
+      - AZP_AGENT_NAME=kislow-linux-docker-agent1
     container_name: azp-agent-linux1
 
   azp-agent-linux2:
@@ -13,5 +13,5 @@ services:
     env_file:
       - .env
     environment:
-      - AZP_AGENT_NAME=ccoe-linux-docker-agent2
+      - AZP_AGENT_NAME=kislow-linux-docker-agent2
     container_name: azp-agent-linux2
