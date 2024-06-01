@@ -1,15 +1,14 @@
 # Azure DevOps linux docker agent
 
 Run a self hosted azure devops agent in docker.
-An self-hosted azure devops agent is required because the default agents are unable to access CCoE cloud resources due to missing peerings.
 
 ## Prerequisite
 
 - azure linux vm
-- internet connectivity
-- vm network peering in order to have access to storage accounts and other azure resources
-- az cli
 - docker
+- internet connectivity
+- vm network config
+- az cli
 - Azure DevOps Agent Pool
 - Azure DevOps Personal Access Token
 
@@ -51,16 +50,21 @@ cp azp-agent-linux.dockerfile start.sh
 docker build --build-arg TERRAFORM_VER=1.8.3 --tag "azp-agent:linux" --file "./azp-agent-linux.dockerfile" .
 ```
 
-## Push to registry
+## Push to your registry
 
-TODO:
+**Optional:**
+
+```sh
+docker tag azp-agent:linux <YOUR_REGISTRY_USERNAME>/azp-agent:linux
+docker push <YOUR_REGISTRY_USERNAME>/azp-agent:linux
+```
 
 ## Running docker single container
 
 ```sh
 docker run -d -e AZP_URL="https://dev.azure.com/ABC/XYZ" \ 
                 -e AZP_TOKEN="XXXXXXX" -e AZP_POOL="qwerty" \ 
-                -e AZP_AGENT_NAME="ccoe-linux-docker-agent1" \ 
+                -e AZP_AGENT_NAME="kislow-linux-docker-agent1" \ 
                 --name "azp-agent-linux" azp-agent:linux`
 ```
 ## Running multiple containers (agents)
