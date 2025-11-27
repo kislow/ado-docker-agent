@@ -89,4 +89,18 @@ docker compose up -d --scale azp-agent=${AGENT_COUNT}
 docker compose down
 ```
 
+## Azure Deployment
+
+```sh
+az vm create \
+  --resource-group my-ado-agents-rg \
+  --name ado-agent-vm01 \
+  --image Canonical:ubuntu-24_04-lts:server:latest \
+  --size Standard_B2s \
+  --admin-username ubuntu \
+  --ssh-key-values ~/.ssh/id_rsa.pub \
+  --custom-data cloud-init.yml \
+  --public-ip-address ""
+```
+
 For in depth documentation pleas refer to the [Official Microsoft Documentation](https://learn.microsoft.com/en-us/azure/devops/pipelines/agents/docker?view=azure-devops#linux).
