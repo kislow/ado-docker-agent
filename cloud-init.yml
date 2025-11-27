@@ -1,0 +1,63 @@
+package_update: true
+package_upgrade: true
+
+packages:
+  - git
+  - curl
+  - ca-certificates
+
+write_files:
+  # Single env file for both compose and scaling
+  - path: /opt/ado-docker-agent/azp-agent-in-docker/.env
+    permissions: "0600"
+    owner: root:root
+    content: |
+      AZP_URL=https://dev.azure.com/YOURORG
+      AZP_POOL=YOURPOOL
+      AZP_TOKEN=YOURPAT
+      AZP_AGENT_NAME_PREFIX=x-linux-agent
+      AGENT_COUNT=3
+
+runcmd:
+  - |
+    set -e
+
+    # Clone your repo
+    mkdir -p /opt/ado-docker-agent
+    git clone https://github.com/kislow/ado-docker-agent.git /opt/ado-docker-agent
+
+    # Install Docker using your script
+    cd /opt/ado-docker-agent/script
+    chmod +x docker_install.sh
+    ./docker_install.sh
+
+    # Add user to docker group
+    usermod -aG docker ubuntu || true
+
+    # Build the agent image
+    cd /opt/ado-docker-agent/azp-agent-in-docker
+    docker build -t azp-agent:linux .
+
+    # Create systemd unit
+    cat > /etc/systemd/system/azp-agents.service <<EOF
+    [Unit]
+    Description=Azure DevOps Docker Agents (Scalable)
+    After=docker.service
+    Requires=docker.service
+
+    [Service]
+    Type=oneshot
+    RemainAfterExit=yes
+    WorkingDirectory=/opt/ado-docker-agent/azp-agent-in-docker
+    EnvironmentFile=/opt/ado-docker-agent/azp-agent-in-docker/.env
+    ExecStart=/usr/bin/docker compose up -d --scale azp-agent=\${AGENT_COUNT}
+    ExecStop=/usr/bin/docker compose down
+    TimeoutStartSec=0
+
+    [Install]
+    WantedBy=multi-user.target
+    EOF
+
+    systemctl daemon-reload
+    systemctl enable azp-agents.service
+    systemctl start azp-agents.service
