@@ -1,77 +1,119 @@
 #!/bin/bash
+set -e
 
-############################################
-# Dislaimer: Script tested on Ubuntu only  #
-############################################
+# -----------------------------------------------------------
+# Docker Installation Script for (Azure/EC2)
+# -----------------------------------------------------------
 
-# remove any exisiting package
-
-function cleanup_docker {
-	echo "Clean up exisiting resources"
-	for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc;
-		do sudo apt-get remove $pkg; 
-	done
+log_info() {
+  echo "[INFO] $1"
 }
 
-
-function setup_docker_apt_repo {
-	# Add Docker's official GPG key:
-	echo "Setting up docker apt repo"
-	sudo apt-get update
-	sudo apt-get install ca-certificates curl
-	sudo install -m 0755 -d /etc/apt/keyrings
-	sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-	sudo chmod a+r /etc/apt/keyrings/docker.asc
-	
-	# Add the repository to Apt sources:
-	echo \
-	  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-	  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-	  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-	sudo apt-get update
+log_warn() {
+  echo "[WARN] $1"
 }
 
-
-function install_latest_docker_version {
-	echo "Installing latest docker version"
-	sudo apt-get install \
-				docker-ce \
-				docker-ce-cli \
-				containerd.io \
-				docker-buildx-plugin \
-				docker-compose-plugin
+update_system() {
+  log_info "Updating system packages..."
+  apt-get update -y
+  log_info "System update completed"
 }
 
+install_docker() {
+  log_info "Installing Docker via get.docker.com..."
 
-function set_user_permission {
-	sudo groupadd docker
-	sudo usermod -aG docker $USER
-	newgrp docker
+  curl -fsSL https://get.docker.com -o get-docker.sh
+  sh get-docker.sh
+
+  log_info "Docker installation completed"
 }
 
+configure_docker_user() {
+  log_info "Configuring Docker user permissions..."
 
-function sanity_check {
+  # Prefer an explicit override if you ever want to set it via env
+  if [ -n "$DOCKER_USER" ]; then
+    USER_NAME="$DOCKER_USER"
+    log_info "Using DOCKER_USER override: $USER_NAME"
+  else
+    # Fallback to first non-root user (uid 1000)
+    USER_NAME=$(getent passwd 1000 | cut -d: -f1 || true)
+    if [ -z "$USER_NAME" ]; then
+      USER_NAME="azureuser"  # good default for Azure Ubuntu images
+      log_info "Could not detect UID 1000 user, defaulting to: $USER_NAME"
+    else
+      log_info "Detected user with UID 1000: $USER_NAME"
+    fi
+  fi
 
-	echo "Check docker status..."
-	sudo systemctl status docker
-
-	echo " "
-	echo "Check docker status..."
-	docker ps
+  if id "$USER_NAME" &>/dev/null; then
+    # docker group normally created by get.docker.com, but be defensive
+    groupadd -f docker
+    usermod -aG docker "$USER_NAME"
+    log_info "User $USER_NAME added to docker group"
+  else
+    log_warn "User $USER_NAME not found, skipping group addition"
+  fi
 }
 
+start_docker_service() {
+  log_info "Enabling and starting Docker service..."
 
-echo "Start docker instal..."
+  systemctl enable docker
+  systemctl start docker
 
-cleanup_docker
+  log_info "Docker service enabled and started"
+}
 
-sleep 1
-setup_docker_apt_repo
+cleanup() {
+  log_info "Cleaning up installation files..."
+  rm -f get-docker.sh || true
+  log_info "Cleanup completed"
+}
 
-sleep 1
-install_latest_docker_version
+create_completion_marker() {
+  local USER_NAME
 
-set_user_permission
+  if [ -n "$DOCKER_USER" ]; then
+    USER_NAME="$DOCKER_USER"
+  else
+    USER_NAME=$(getent passwd 1000 | cut -d: -f1 || true)
+    [ -z "$USER_NAME" ] && USER_NAME="azureuser"
+  fi
 
-echo "Sanity check..."
-sanity_check
+  local MARKER_FILE="/home/$USER_NAME/.docker-setup-complete"
+
+  log_info "Creating completion marker at: $MARKER_FILE"
+  echo "Docker setup completed at $(date)" > "$MARKER_FILE"
+  chown "$USER_NAME:$USER_NAME" "$MARKER_FILE" 2>/dev/null || true
+}
+
+verify_installation() {
+  log_info "Verifying Docker installation..."
+
+  if command -v docker &>/dev/null; then
+    docker --version || true
+    docker compose version 2>/dev/null || log_warn "Docker Compose plugin not available"
+    log_info "Docker verification completed"
+  else
+    log_warn "Docker binary not found on PATH"
+    exit 1
+  fi
+}
+
+main() {
+  log_info "Starting Docker setup..."
+
+  update_system
+  install_docker
+  configure_docker_user
+  start_docker_service
+  verify_installation
+  cleanup
+  create_completion_marker
+
+  log_info "Docker setup completed successfully!"
+  log_info "Note: user must log out/in for group changes to take effect"
+}
+
+main
