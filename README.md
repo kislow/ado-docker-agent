@@ -83,7 +83,7 @@ EOF
 
 ```sh
 # start multiple containers
-docker compose up -d
+docker compose up -d --scale azp-agent=${AGENT_COUNT}
 
 # stop/remove containers
 docker compose down
