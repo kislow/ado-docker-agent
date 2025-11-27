@@ -1,24 +1,6 @@
 services:
-  azp-agent-linux: &azp-agent
+  azp-agent:
     image: azp-agent:linux
     env_file:
       - .env
-    volumes:
-      - ~/.ssh/docker:/home/agent/.ssh
-      - ~/.ssh/docker/id_rsa:/home/agent/.ssh/id_rsa:ro
-      - ~/.ssh/docker/id_rsa.pub:/home/agent/.ssh/id_rsa.pub:ro
-    environment:
-      - AZP_AGENT_NAME=x-linux-docker-agent-0
-    container_name: azp-agent-linux-0
-
-  azp-agent-linux-1:
-    <<: *azp-agent
-    environment:
-      - AZP_AGENT_NAME=x-linux-docker-agent-1
-    container_name: azp-agent-linux-1
-
-  azp-agent-linux-2:
-    <<: *azp-agent
-    environment:
-      - AZP_AGENT_NAME=x-linux-docker-agent-2
-    container_name: azp-agent-linux-2
+    restart: always
